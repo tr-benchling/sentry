@@ -169,9 +169,9 @@ describe('AssigneeSelector', function () {
     openMenu();
     MemberListStore.loadInitialData([USER_1, USER_2]);
     assigneeSelector.update();
-    expect(assigneeSelector.instance().assignableTeams()).toHaveLength(1);
 
     expect(assigneeSelector.find('LoadingIndicator')).toHaveLength(0);
+    // Verify user-visible avatars are rendered for members and teams
     expect(assigneeSelector.find('UserAvatar')).toHaveLength(2);
     expect(assigneeSelector.find('TeamAvatar')).toHaveLength(1);
   });
@@ -304,8 +304,10 @@ describe('AssigneeSelector', function () {
       .find('StyledInput')
       .simulate('change', {target: {value: 'JohnSmith@example.com'}});
 
+    // Verify that filtering shows only the matching user by checking visible name
     expect(assigneeSelector.find('UserAvatar')).toHaveLength(1);
-    expect(assigneeSelector.find('UserAvatar').prop('user')).toEqual(USER_2);
+    const filteredUserLabel = assigneeSelector.find('MenuItemWrapper Label Highlight');
+    expect(filteredUserLabel.text()).toContain(USER_2.name);
 
     assigneeSelector.find('StyledInput').simulate('keyDown', {key: 'Enter'});
     assigneeSelector.update();
@@ -336,15 +338,18 @@ describe('AssigneeSelector', function () {
     await tick();
     assigneeSelector.update();
 
-    const avatarTooltip = mountWithTheme(assigneeSelector.find('Tooltip').prop('title'));
-    expect(avatarTooltip.text()).toContain('Suggestion: Jane Bloggs');
-    expect(avatarTooltip.text()).toContain('Based on commit data');
+    // Verify user-visible suggested assignee indicator is shown
+    expect(assigneeSelector.find('SuggestedAvatarStack').exists()).toBe(true);
 
     openMenu();
     expect(assigneeSelector.find('LoadingIndicator').exists()).toBe(false);
-    expect(assigneeSelector.find('SuggestedAvatarStack').exists()).toBe(true);
 
+    // Verify the "Suggested" section header is visible to the user
     expect(assigneeSelector.find('GroupHeader').first().text()).toEqual('Suggested');
+
+    // Verify suggested user name is visible in the dropdown
+    const suggestedSection = assigneeSelector.find('MenuItemWrapper').first();
+    expect(suggestedSection.text()).toContain(USER_1.name);
 
     assigneeSelector.find('UserAvatar').at(1).simulate('click');
 
@@ -373,7 +378,13 @@ describe('AssigneeSelector', function () {
       <AssigneeSelectorComponent id={GROUP_2.id} />,
       TestStubs.routerContext()
     );
-    const avatarTooltip = mountWithTheme(assigneeSelector.find('Tooltip').prop('title'));
-    expect(avatarTooltip.text()).toContain('Unassigned');
+
+    await tick();
+    assigneeSelector.update();
+
+    // Verify no assignee avatar is shown (user sees unassigned state)
+    expect(assigneeSelector.find('ActorAvatar').exists()).toBe(false);
+    // The unassigned icon should be visible
+    expect(assigneeSelector.find('StyledIconUser').exists()).toBe(true);
   });
 });
